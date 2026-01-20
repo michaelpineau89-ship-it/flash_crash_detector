@@ -35,7 +35,8 @@ graph LR
         BQ_Alerts
         BQ_Raw
     end
-    ```
+```
+
 ## 🧩 System Components
 
 ### 1. The Ingestion Layer (`/src/ingestion`)

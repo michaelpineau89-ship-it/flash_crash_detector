@@ -1,0 +1,68 @@
+name: Build & Deploy Artifacts
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPO_NAME: flash-crash-repo
+  TEMPLATE_BUCKET: ${{ secrets.GCS_TEMPLATE_BUCKET }} 
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write' # <-- REQUIRED FOR WIF
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 1. Authenticate to Google Cloud (WIF EDITION)
+    - id: 'auth'
+      name: 'Authenticate to GCP'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        # The keyless handshake
+        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+        # The specific Service Account this repo is allowed to impersonate
+        service_account: 'flash-crash-runner@mike-personal-portfolio.iam.gserviceaccount.com'
+
+    # 2. Configure Docker (Uses the token from step 1)
+    - name: Configure Docker
+      run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+    # ... (Rest of the file remains exactly the same: Build, Push, Upload Spec) ...
+    - name: Build Ingestion Image
+      run: |
+        docker build \
+          -f src/ingestion/Dockerfile \
+          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest \
+          .
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest
+
+    - name: Build Dataflow Image
+      run: |
+        docker build \
+          -f src/pipeline/Dockerfile \
+          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest \
+          .
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest
+
+    - name: Upload Dataflow Spec
+      run: |
+        cat <<EOF > flash_crash_spec.json
+        {
+          "image": "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest",
+          "sdkInfo": {"language": "PYTHON"}
+        }
+        EOF
+        gsutil cp flash_crash_spec.json gs://${{ env.TEMPLATE_BUCKET }}/templates/flash_crash_spec.json
