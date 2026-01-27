@@ -26,15 +26,18 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 1. Authenticate to Google Cloud (WIF EDITION)
+# 1. Authenticate to Google Cloud (WIF EDITION)
     - id: 'auth'
       name: 'Authenticate to GCP'
       uses: 'google-github-actions/auth@v2'
       with:
-        # The keyless handshake
         workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-        # The specific Service Account this repo is allowed to impersonate
         service_account: 'flash-crash-runner@mike-personal-portfolio.iam.gserviceaccount.com'
+
+    # 👇 ADD THIS STEP (The Fix)
+    # This configures the gcloud CLI to use the credentials from the step above.
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
 
     # 2. Configure Docker (Uses the token from step 1)
     - name: Configure Docker
