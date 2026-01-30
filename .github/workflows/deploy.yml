@@ -40,7 +40,7 @@ jobs:
 
     # 2. Configure Docker (Uses the token from step 1)
     - name: Configure Docker
-      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      run: gcloud auth configure-docker us-east1-docker.pkg.dev
 
     # ... (Rest of the file remains exactly the same: Build, Push, Upload Spec) ...
     - name: Build Ingestion Image
