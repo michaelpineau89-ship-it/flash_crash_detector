@@ -44,9 +44,9 @@ jobs:
 
     # ... (Rest of the file remains exactly the same: Build, Push, Upload Spec) ...
     - name: Build Ingestion Image
+      working-directory: ./src/ingestion
       run: |
         docker build \
-          -f src/ingestion/Dockerfile \
           -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest \
           .
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest
