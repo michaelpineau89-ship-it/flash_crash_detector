@@ -7,7 +7,7 @@ RUN mkdir -p ${WORKDIR}
 WORKDIR ${WORKDIR}
 
 # 2. Copy requirements and install
-COPY src/pipelinerequirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY pipeline.py ${WORKDIR}/pipeline.py
