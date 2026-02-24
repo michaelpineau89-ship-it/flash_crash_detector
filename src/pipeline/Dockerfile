@@ -1,13 +1,22 @@
-FROM gcr.io/dataflow-templates-base/python311-template-launcher-base
+# Keep your existing FROM line (likely python3-template-launcher-base)
+FROM gcr.io/dataflow-templates-base/python3-template-launcher-base
 
-# Set the environment variables Dataflow needs
-ENV FLEX_TEMPLATE_PYTHON_PY_FILE="/template/pipeline.py"
-ENV FLEX_TEMPLATE_PYTHON_REQUIREMENTS_FILE="/template/requirements.txt"
+# 1. Set the variable for where Dataflow expects files
+ARG WORKDIR=/template
+RUN mkdir -p ${WORKDIR}
+WORKDIR ${WORKDIR}
 
-# Copy your code into the container
-COPY . /template
+# 2. Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r $FLEX_TEMPLATE_PYTHON_REQUIREMENTS_FILE \
-    && pip download --no-cache-dir --dest /tmp/dataflow-requirements-cache -r $FLEX_TEMPLATE_PYTHON_REQUIREMENTS_FILE
+# 3. 👇 THIS IS THE CRITICAL FIX: Copy the pipeline code to /template/pipeline.py
+# (Make sure your local python file is actually named 'pipeline.py'. 
+# If it's named 'main.py' or 'flash_crash.py', rename it or update this line)
+COPY pipeline.py ${WORKDIR}/pipeline.py
+
+# 4. Set the Environment Variable so Dataflow knows exactly where to look
+ENV FLEX_TEMPLATE_PYTHON_PY_FILE="${WORKDIR}/pipeline.py"
+
+# (Optional) If you have a setup.py, copy it too
+# COPY setup.py ${WORKDIR}/setup.py
