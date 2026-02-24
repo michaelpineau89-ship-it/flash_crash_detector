@@ -55,7 +55,6 @@ jobs:
       working-directory: ./src/pipeline
       run: |
         docker build \
-          -f src/pipeline/Dockerfile \
           -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest \
           .
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest
