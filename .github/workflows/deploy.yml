@@ -52,6 +52,7 @@ jobs:
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest
 
     - name: Build Dataflow Image
+      working-directory: ./src/pipeline
       run: |
         docker build \
           -f src/pipeline/Dockerfile \
