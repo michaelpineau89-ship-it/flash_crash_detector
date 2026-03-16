@@ -59,7 +59,16 @@ class CalculateWindowStats(beam.DoFn):
 def run():
     PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
     SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "test-peek-sub") # Use the sub we created!
-    
+    SCHEMA = '''
+    ticker:STRING, 
+    window_start:STRING, 
+    window_end:STRING, 
+    trade_count:INTEGER, 
+    avg_price:FLOAT, 
+    max_price:FLOAT, 
+    min_price:FLOAT, 
+    drop_pct:FLOAT, 
+    flash_crash_detected:BOOLEAN'''
     subscription_path = f"projects/{PROJECT_ID}/subscriptions/{SUBSCRIPTION_ID}"
 
     # Set up Beam pipeline options for streaming
@@ -83,7 +92,12 @@ def run():
             
             # Pass the bundled list to our math function
             | "CalculateStats" >> beam.ParDo(CalculateWindowStats())
-            | "PrintToConsole" >> beam.Map(print)
+            | "WriteToBigQuery" >> beam.io.WriteToBigQuery(
+                table = f"{PROJECT_ID}:crypto_dataset.flash_crashes",
+                schema = SCHEMA,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
+            )
         )
 
 if __name__ == "__main__":
