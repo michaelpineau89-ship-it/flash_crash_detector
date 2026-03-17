@@ -1,70 +1,63 @@
-name: Build & Deploy Artifacts
+name: Deploy Ingestion to Cloud Run
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - feature/ingestion  # Change to 'main' later when you merge
     paths:
-      - 'src/**'
-      - 'requirements.txt'
-      - 'Dockerfile'
-      - '.github/workflows/deploy.yml'
+      - 'src/ingestion/**' # Only trigger if ingestion code changes
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us-east1
-  REPO_NAME: flash-crash-repo
-  TEMPLATE_BUCKET: ${{ secrets.GCS_TEMPLATE_BUCKET }} 
+  PROJECT_ID: "mike-personal-portfolio"
+  REGION: "us-central1"
+  REPO_NAME: "docker-repo" # We will need to create this in GCP
+  IMAGE_NAME: "crypto-ingestion"
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write' # <-- REQUIRED FOR WIF
-
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-# 1. Authenticate to Google Cloud (WIF EDITION)
-    - id: 'auth'
-      name: 'Authenticate to GCP'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
-        service_account: 'flash-crash-runner@mike-personal-portfolio.iam.gserviceaccount.com'
+      # 1. Authenticate with Google Cloud using a GitHub Secret
+      - name: Google Cloud Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-    # This configures the gcloud CLI to use the credentials from the step above.
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v2'
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-    # 2. Configure Docker (Uses the token from step 1)
-    - name: Configure Docker
-      run: gcloud auth configure-docker us-east1-docker.pkg.dev
+      # 2. Tell Docker to log into Google Artifact Registry
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-    # ... (Rest of the file remains exactly the same: Build, Push, Upload Spec) ...
-    - name: Build Ingestion Image
-      working-directory: ./src/ingestion
-      run: |
-        docker build \
-          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest \
-          .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ingestion-service:latest
+      # 3. Build and push the container to Google Cloud
+      - name: Build and Push
+        run: |
+          cd src/ingestion
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          docker build -t $IMAGE_PATH .
+          docker push $IMAGE_PATH
 
-    - name: Build Dataflow Image
-      working-directory: ./src/pipeline
-      run: |
-        docker build \
-          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest \
-          .
-        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest
-
-    - name: Upload Dataflow Spec
-      run: |
-        cat <<EOF > flash_crash_spec.json
-        {
-          "image": "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/dataflow-worker:latest",
-          "sdkInfo": {"language": "PYTHON"}
-        }
-        EOF
-        gsutil cp flash_crash_spec.json gs://${{ env.TEMPLATE_BUCKET }}/templates/flash_crash_spec.json
+      # 4. Deploy the continuous service to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          # 4. Deploy the continuous service to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          gcloud run deploy crypto-ingestion-service \
+            --image $IMAGE_PATH \
+            --region ${{ env.REGION }} \
+            --cpu 1 \
+            --memory 512Mi \
+            --no-cpu-throttling \
+            --min-instances 1 \
+            --max-instances 1 \
+            --set-env-vars PROJECT_ID=${{ env.PROJECT_ID }},TOPIC_ID=crypto-ticks
