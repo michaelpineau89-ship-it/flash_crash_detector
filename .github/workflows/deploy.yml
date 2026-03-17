@@ -47,9 +47,16 @@ jobs:
         run: |
           IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
           
+          # 4. Deploy the continuous service to Cloud Run
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
           gcloud run deploy crypto-ingestion-service \
             --image $IMAGE_PATH \
             --region ${{ env.REGION }} \
+            --cpu 1 \
+            --memory 512Mi \
             --no-cpu-throttling \
             --min-instances 1 \
             --max-instances 1 \
