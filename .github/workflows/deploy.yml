@@ -9,7 +9,7 @@ on:
 
 env:
   PROJECT_ID: "mike-personal-portfolio"
-  REGION: "us-east1"
+  REGION: "us-central1"
   REPO_NAME: "docker-repo" # We will need to create this in GCP
   IMAGE_NAME: "crypto-ingestion"
 
