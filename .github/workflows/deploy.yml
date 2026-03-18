@@ -2,10 +2,8 @@ name: Deploy Ingestion to Cloud Run
 
 on:
   push:
-    branches:
-      - feature/ingestion  # Change to 'main' later when you merge
-    paths:
-      - 'src/ingestion/**' # Only trigger if ingestion code changes
+    branches: [ "main", "feature/*" ]
+  pull_request:
 
 env:
   PROJECT_ID: "mike-personal-portfolio"
