@@ -1,0 +1,56 @@
+name: Deploy Ingestion to Dataflow
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+
+env:
+  PROJECT_ID: "mike-personal-portfolio"
+  REGION: "us-central1"
+  REPO_NAME: "flash-crash-repo" 
+  IMAGE_NAME: "pipeline-dataflow"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write' 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Authenticate with Google Cloud (WIF Edition)
+      - name: Google Cloud Auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
+          # Replace this email if your Python repo uses a different service account than your Terraform repo!
+          service_account: 'flash-crash-runner@mike-personal-portfolio.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 2. Tell Docker to log into Google Artifact Registry
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # 3. Build and push the container to Google Cloud
+      - name: Build and Push Docker Image
+        run: |
+          cd src/pipeline
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          docker build -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest .
+          docker push $IMAGE_PATH --all-tags
+        
+      - name: Build and Upload Flex Template
+        run: |
+            IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest"
+
+            gcloud dataflow flex-template build gs://${{ secrets.GCS_TEMPLATE_BUCKET }}/templates/flash_crash_template.json \
+            --image "$IMAGE_PATH" \
+            --sdk-language "PYTHON"
