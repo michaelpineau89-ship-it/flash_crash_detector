@@ -42,7 +42,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           cd src/pipeline
-          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}"
           
           docker build -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest .
           docker push $IMAGE_PATH --all-tags
