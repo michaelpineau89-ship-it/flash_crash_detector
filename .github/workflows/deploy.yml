@@ -29,7 +29,7 @@ jobs:
         with:
           workload_identity_provider: '${{ secrets.WIF_PROVIDER_NAME }}'
           # Replace this email if your Python repo uses a different service account than your Terraform repo!
-          service_account: 'terraform-deployer@mike-personal-portfolio.iam.gserviceaccount.com'
+          service_account: 'flash-crash-runner@mike-personal-portfolio.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
