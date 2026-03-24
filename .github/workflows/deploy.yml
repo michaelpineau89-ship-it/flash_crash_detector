@@ -2,8 +2,7 @@ name: Deploy Ingestion to Cloud Run
 
 on:
   push:
-    branches: [ "main", "feature/*" ]
-  pull_request:
+    branches: [ "main" ]
 
 env:
   PROJECT_ID: "mike-personal-portfolio"
