@@ -1,4 +1,4 @@
-name: Deploy Ingestion to Cloud Run
+name: Deploy Ingestion to Dataflow
 
 on:
   push:
@@ -9,7 +9,7 @@ env:
   PROJECT_ID: "mike-personal-portfolio"
   REGION: "us-central1"
   REPO_NAME: "flash-crash-repo" 
-  IMAGE_NAME: "ingestion-service"
+  IMAGE_NAME: "pipeline-dataflow"
 
 jobs:
   build-and-deploy:
@@ -39,10 +39,18 @@ jobs:
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       # 3. Build and push the container to Google Cloud
-      - name: Build and Push
+      - name: Build and Push Docker Image
         run: |
-          cd src/ingestion
-          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          cd src/pipeline
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}"
           
-          docker build -t $IMAGE_PATH .
-          docker push $IMAGE_PATH
+          docker build -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest .
+          docker push $IMAGE_PATH --all-tags
+        
+      - name: Build and Upload Flex Template
+        run: |
+            IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest"
+
+            gcloud dataflow flex-template build gs://${{ secrets.GCS_TEMPLATE_BUCKET }}/templates/flash_crash_template.json \
+            --image "$IMAGE_PATH" \
+            --sdk-language "PYTHON"
