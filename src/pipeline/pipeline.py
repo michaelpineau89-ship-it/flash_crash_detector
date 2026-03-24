@@ -58,7 +58,7 @@ class CalculateWindowStats(beam.DoFn):
 
 def run():
     PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
-    SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "crypto_ticks")
+    SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "crypto-ticks-sub")
     SCHEMA = '''
     ticker:STRING, 
     window_start:STRING, 
