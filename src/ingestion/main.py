@@ -40,6 +40,11 @@ class DummyHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b"Alive")
+        
+    def do_POST(self): # Add this so Cloud Scheduler is happy!
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Alive")
 
 def run_dummy_server():
     port = int(os.environ.get("PORT", 8080))
