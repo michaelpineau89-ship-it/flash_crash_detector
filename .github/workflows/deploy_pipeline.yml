@@ -2,8 +2,7 @@ name: Deploy Ingestion to Dataflow
 
 on:
   push:
-    branches: [ "main", "feature/*" ]
-  pull_request:
+    branches: [ "main" ]
 
 env:
   PROJECT_ID: "mike-personal-portfolio"
