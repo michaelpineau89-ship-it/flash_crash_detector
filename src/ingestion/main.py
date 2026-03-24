@@ -16,7 +16,7 @@ publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 
 # 2. Binance WebSocket URL for raw BTC/USDT trades
-WS_URL = "wss://stream.binance.com:9443/ws/btcusdt@trade"
+WS_URL = "wss://stream.binance.us:9443/ws/btcusdt@trade"
 
 def on_open(ws):
     logging.info("🟢 Connected to Binance WebSocket: Streaming BTC/USDT trades...")
