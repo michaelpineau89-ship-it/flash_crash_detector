@@ -58,7 +58,7 @@ class CalculateWindowStats(beam.DoFn):
 
 def run():
     PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
-    SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "test-peek-sub") # Use the sub we created!
+    SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "flash_crash_dataflow") # Use the sub we created!
     SCHEMA = '''
     ticker:STRING, 
     window_start:STRING, 
@@ -93,7 +93,7 @@ def run():
             # Pass the bundled list to our math function
             | "CalculateStats" >> beam.ParDo(CalculateWindowStats())
             | "WriteToBigQuery" >> beam.io.WriteToBigQuery(
-                table = f"{PROJECT_ID}:crypto_dataset.flash_crashes",
+                table = f"{PROJECT_ID}:flash_crash_data.aggregated_stats",
                 schema = SCHEMA,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
                 create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
