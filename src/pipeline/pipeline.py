@@ -1,8 +1,7 @@
 import os
 import json
 import logging
-import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, SetupOptions
+from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, SetupOptions, GoogleCloudOptions
 from apache_beam.transforms.window import FixedWindows
 
 # 1. Parse the JSON and extract the price and timestamp
@@ -113,4 +112,10 @@ def run():
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     print("🚀 Starting local Dataflow pipeline...")
+
+    options = PipelineOptions()
+    options.view_as(StandardOptions).streaming = True
+    options.view_as(SetupOptions).save_main_session = True
+    options.view_as(GoogleCloudOptions).enable_streaming_engine = True
+    options.view_as(GoogleCloudOptions).service_account_email = f"flash-crash-worker@{PROJECT_ID}.iam.gserviceaccount.com"
     run()

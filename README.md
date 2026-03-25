@@ -13,28 +13,64 @@ This system uses a **Poller Pattern** for ingestion and a **Streaming Pipeline**
 
 ```mermaid
 graph LR
-    Scheduler[Cloud Scheduler] -->|1-min Trigger| Function(Cloud Function)
-    Function -->|HTTPS Fetch| API[Alpha Vantage API]
-    Function -->|Publish JSON| PubSub(Cloud Pub/Sub)
-    
-    subgraph Dataflow [Apache Beam Pipeline]
-        Reader(JSON Parse) --> Window(Fixed Window 1m)
-        Window --> Calc(Drop Calculation)
-        Calc --> Filter{Drop > 5%?}
+    %% External & Local Edge Ingestion
+    subgraph Edge ["Local Environment (Oshawa)"]
+        direction TB
+        Binance(("Binance Global\nWebSocket API"))
+        Ingest["Python Ingestion Script\n(main.py)"]
+        Binance -- "Raw JSON Trades" --> Ingest
     end
-    
-    PubSub -->|Subscribe| Reader
-    Filter -->|Yes: Alert| BQ_Alerts[(BigQuery Alerts)]
-    Filter -->|No: Archive| BQ_Raw[(BigQuery Raw)]
-    
-    subgraph GCP [Google Cloud Platform]
-        Scheduler
-        Function
-        PubSub
-        Dataflow
-        BQ_Alerts
-        BQ_Raw
+
+    %% CI/CD and Security Plane
+    subgraph CICD ["Control Plane & Security"]
+        direction TB
+        GH["GitHub Actions\n(Workload Identity)"]
+        AR["Artifact Registry\n(Container Scanning API)"]
+        TF["Terraform\n(Infrastructure as Code)"]
+        SA["Custom Service Account\n(Least Privilege IAM)"]
+
+        GH -- "Builds & Pushes" --> AR
+        GH -- "Deploys" --> TF
     end
+
+    %% Google Cloud Data Plane
+    subgraph GCP ["Google Cloud (us-central1)"]
+        direction TB
+        PS[["Cloud Pub/Sub\n(crypto-ticks)"]]
+        
+        subgraph Dataflow ["Cloud Dataflow (Streaming Engine)"]
+            direction LR
+            Read["ReadFromPubSub"]
+            Parse["ParseJSON"]
+            Window["WindowIntoMinutes\n(60s)"]
+            Group["GroupByKey\n(Network Shuffle)"]
+            Calc["CalculateStats\n(drop_pct)"]
+            Write["WriteToBigQuery"]
+
+            Read --> Parse --> Window --> Group --> Calc --> Write
+        end
+        
+        BQ[("BigQuery\n(aggregated_stats table)")]
+    end
+
+    %% Cross-Boundary Connections
+    Ingest -- "HTTPS / TLS\n(Encrypted Bytes)" --> PS
+    PS --> Read
+    Write --> BQ
+    TF -. "Provisions Architecture" .-> GCP
+    AR -. "Pulls Docker Template" .-> Dataflow
+    SA -. "Secures Execution" .-> Dataflow
+
+    %% Styling to make it look sharp
+    classDef gcp fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000;
+    classDef external fill:#f5f5f5,stroke:#9e9e9e,stroke-width:2px,color:#000;
+    classDef cicd fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000;
+    classDef dataflow fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000;
+    
+    class Edge,Binance,Ingest external;
+    class GCP,PS,BQ gcp;
+    class CICD,GH,AR,TF,SA cicd;
+    class Dataflow,Read,Parse,Window,Group,Calc,Write dataflow;
 ```
 
 ## 🧩 System Components
@@ -81,3 +117,4 @@ Verify that your environment can reach the external stock API.
 ```bash
 python3 src/verify_connectivity.py --api_key="YOUR_API_KEY"
 ```
+
