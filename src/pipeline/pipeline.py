@@ -2,12 +2,16 @@ import os
 import json
 import logging
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions,SetupOptions
+from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, SetupOptions
 from apache_beam.transforms.window import FixedWindows
 
 # 1. Parse the JSON and extract the price and timestamp
 class ParseTradeData(beam.DoFn):
     def process(self, element):
+        # The Bulletproof Fix: Force the worker to import these right before it needs them
+        import apache_beam as beam 
+        import json 
+        
         try:
             # Pub/Sub messages come in as bytes, so we decode them
             message = element.decode('utf-8')
@@ -58,7 +62,10 @@ class CalculateWindowStats(beam.DoFn):
 
 def run():
     PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
+    
+    # FIXED: Using hyphens to match the actual Pub/Sub subscription name
     SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "crypto-ticks-sub")
+    
     SCHEMA = '''
     ticker:STRING, 
     window_start:STRING, 
@@ -74,6 +81,9 @@ def run():
     # Set up Beam pipeline options for streaming
     options = PipelineOptions()
     options.view_as(StandardOptions).streaming = True
+    
+    # FIXED: Tell Beam to package up the global namespace and ship it to the workers
+    options.view_as(SetupOptions).save_main_session = True
 
     with beam.Pipeline(options=options) as p:
         (
@@ -103,10 +113,4 @@ def run():
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     print("🚀 Starting local Dataflow pipeline...")
-
-    options = PipelineOptions()
-    options.view_as(StandardOptions).streaming = True
-
-    options.view_as(SetupOptions).save_main_session = True
-    
     run()
