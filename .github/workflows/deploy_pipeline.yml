@@ -35,7 +35,7 @@ jobs:
 
       # 2. Tell Docker to log into Google Artifact Registry
       - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       # 3. Build and push the container to Google Cloud
       - name: Build and Push Docker Image
