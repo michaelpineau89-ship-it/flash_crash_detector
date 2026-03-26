@@ -103,5 +103,6 @@ While this repository demonstrates a highly scalable Proof-of-Concept, it is bui
 * **Stateless Key Management:** Zero static JSON service account keys are stored or used. GitHub Actions securely authenticates to Google Cloud via OpenID Connect (OIDC) and Workload Identity Federation.
 * **Cost Engineering:** The architecture can be adapted to utilize Preemptible/Spot VMs for the ingestion layer and BigQuery micro-batching to drastically reduce streaming insert costs without sacrificing data integrity.
 
+
 ---
 **Architected by Mike** *Google Certified Data Engineer | 10+ Years IT Industry Experience* **Freelance Data Solutions**
