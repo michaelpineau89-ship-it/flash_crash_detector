@@ -1,8 +1,11 @@
 import os
 import json
 import logging
+import apache_beam as beam
+
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, SetupOptions, GoogleCloudOptions
 from apache_beam.transforms.window import FixedWindows
+
 
 # 1. Parse the JSON and extract the price and timestamp
 class ParseTradeData(beam.DoFn):
