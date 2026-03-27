@@ -7,6 +7,10 @@ from apache_beam.options.pipeline_options import PipelineOptions, StandardOption
 from apache_beam.transforms.window import FixedWindows
 
 
+PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
+SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "crypto-ticks-sub")
+    
+
 # 1. Parse the JSON and extract the price and timestamp
 class ParseTradeData(beam.DoFn):
     def process(self, element):
@@ -63,10 +67,6 @@ class CalculateWindowStats(beam.DoFn):
 
 
 def run():
-    PROJECT_ID = os.environ.get("PROJECT_ID", "mike-personal-portfolio")
-    
-    # FIXED: Using hyphens to match the actual Pub/Sub subscription name
-    SUBSCRIPTION_ID = os.environ.get("SUBSCRIPTION_ID", "crypto-ticks-sub")
     
     SCHEMA = '''
     ticker:STRING, 
